@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Variabelinnsetting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- KaTeX for nydelig matematikk-rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    
+    <!-- Kalam font - En mye bedre håndskrift-font med full støtte for norske tegn (æ, ø, å) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            /* Veldig realistisk, støvete skifertavle-bakgrunn (som på bildet) */
+            background-color: #2b2e33; 
+            background-image: 
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E"),
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.05) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255,255,255,0.03) 0%, transparent 50%);
+            
+            /* Realistisk krittstøv-effekt med tykkere, blødende kanter */
+            color: rgba(255, 255, 255, 0.85); 
+            font-family: 'Kalam', cursive;
+            font-style: normal;
+            font-size: 1.2rem;
+            text-shadow: 
+                0px 0px 2px rgba(255, 255, 255, 0.4),
+                1px 1px 1px rgba(255, 255, 255, 0.2),
+                -1px -1px 1px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Tvinger ALL matematikk til å bruke håndskrift, og deaktiverer kursiv som ødela bokstavene */
+        .katex, .katex * {
+            font-family: 'Kalam', cursive !important;
+            font-style: normal !important;
+            font-weight: normal !important;
+        }
+        .katex {
+            color: rgba(255, 255, 255, 0.85) !important;
+            /* Samme krittstøv-effekt på matten */
+            text-shadow: 
+                0px 0px 2px rgba(255, 255, 255, 0.4),
+                1px 1px 1px rgba(255, 255, 255, 0.2),
+                -1px -1px 1px rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* Kritt-input for svarfeltet */
+        .chalk-input {
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid rgba(255, 255, 255, 0.4);
+            color: #fff;
+            text-align: center;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        .chalk-input:focus {
+            outline: none;
+            border-bottom: 3px solid #fff;
+        }
+        .chalk-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Animasjoner for stegene (Bakom uttrykket) */
+        .step-math {
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .step-math.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .hint-badge-anim {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(3px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
+            40%, 60% { transform: translate3d(5px, 0, 0); }
+        }
+
+        /* Spesialklasser for kritt-knapper */
+        .chalk-btn {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.02);
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.2s;
+        }
+        .chalk-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        .chalk-btn-active {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 0 3px rgba(255,255,255,0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <!-- Sidetittel for krittavlen -->
+    <h1 class="text-center text-4xl md:text-5xl mb-8 tracking-wide opacity-90" style="text-shadow: 0 0 4px rgba(255,255,255,0.3);">
+        Variabelinnsetting
+    </h1>
+
+    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+        
+        <!-- Sidepanel: Nivåvelger (Krittmeny) -->
+        <div class="md:col-span-1 flex flex-col gap-4">
+            <div class="border-2 border-white/20 rounded-2xl p-5 bg-white/5 shadow-lg">
+                <h2 class="text-2xl mb-4 border-b-2 border-white/20 pb-2">Velg nivå</h2>
+                <div class="flex flex-col gap-3">
+                    <!-- Fikset linjedeling ved å bytte ut whitespace-nowrap med block og break-words -->
+                    <button onclick="setLevel(1)" id="btn-lvl-1" class="lvl-btn text-left px-4 py-3 rounded-xl chalk-btn chalk-btn-active">
+                        Nivå 1<br><span class="text-sm opacity-70 block mt-1 leading-snug break-words">Enkel innsetting</span>
+                    </button>
+                    <button onclick="setLevel(2)" id="btn-lvl-2" class="lvl-btn text-left px-4 py-3 rounded-xl chalk-btn">
+                        Nivå 2<br><span class="text-sm opacity-70 block mt-1 leading-snug break-words">To regneoperasjoner</span>
+                    </button>
+                    <button onclick="setLevel(3)" id="btn-lvl-3" class="lvl-btn text-left px-4 py-3 rounded-xl chalk-btn">
+                        Nivå 3<br><span class="text-sm opacity-70 block mt-1 leading-snug break-words">Negative tall</span>
+                    </button>
+                    <button onclick="setLevel(4)" id="btn-lvl-4" class="lvl-btn text-left px-4 py-3 rounded-xl chalk-btn">
+                        Nivå 4<br><span class="text-sm opacity-70 block mt-1 leading-snug break-words">Flere variabler / fortegn</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Infoboks om mellomregning -->
+            <div class="border-2 border-dashed border-white/30 rounded-2xl p-5 text-white/80">
+                <h3 class="mb-1 flex items-center gap-2 text-xl text-yellow-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Husk!
+                </h3>
+                <p class="text-lg leading-tight">Hvert steg forklarer nøyaktig hva som skjer med operasjonene og fortegnene underveis.</p>
+            </div>
+        </div>
+
+        <!-- Hovedområde: Selve tavla -->
+        <div class="md:col-span-3 flex flex-col gap-6">
+            <div class="border-2 border-white/40 rounded-2xl p-6 md:p-10 min-h-[550px] flex flex-col relative bg-white/5" style="box-shadow: inset 0 0 40px rgba(0,0,0,0.3);">
+                
+                <!-- Oppgavetekst og horisontal utregning -->
+                <div class="text-center mb-8 flex-grow flex flex-col justify-center">
+                    <h2 class="text-2xl md:text-3xl text-white/90 mb-12 border-b border-white/20 pb-4 inline-block mx-auto" id="problem-condition">
+                        <!-- Fylles av JS -->
+                    </h2>
+                    
+                    <!-- Ligningsrekke (Utregning brytes over flere linjer ved behov) -->
+                    <div id="equation-row" class="flex flex-wrap pb-4 justify-start items-center gap-x-3 gap-y-6 text-4xl md:text-5xl lg:text-6xl text-white pl-4 md:pl-10 lg:pl-16 w-full">
+                        <div id="problem-expression" class="transition-all duration-500 flex-shrink-0">
+                            <!-- Fylles av JS via KaTeX -->
+                        </div>
+                        <!-- Mellomregningsstegene legges til her på samme linje -->
+                    </div>
+
+                    <!-- Forklaringsboks for hvert trinn -->
+                    <div id="explanation-container" class="mt-16 h-12 flex items-center justify-center w-full">
+                        <!-- Tekst injiseres her -->
+                    </div>
+                </div>
+
+                <!-- Interaksjon -->
+                <div class="mt-auto pt-6 flex flex-col items-center gap-6 w-full">
+                    
+                    <!-- Knapp for å sette inn tall (Fase 1) -->
+                    <div id="action-insert" class="flex justify-center w-full">
+                        <button onclick="performSubstitution()" class="border-2 border-white text-white px-10 py-4 rounded-full text-2xl tracking-wide hover:bg-white/20 transition-all flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            Sett inn tallene!
+                        </button>
+                    </div>
+
+                    <!-- Kontroller etter innsetting (Fase 2) -->
+                    <div id="interactive-controls" class="hidden flex-col items-center gap-5 w-full">
+                        <!-- Elevens input -->
+                        <div id="student-input-area" class="flex flex-col sm:flex-row gap-4 w-full max-w-lg items-center">
+                            <input type="number" id="user-answer" placeholder="Skriv sluttsvar her..." class="chalk-input flex-1 text-3xl p-3 w-full sm:w-auto">
+                            <button onclick="checkAnswer()" class="border-2 border-white/80 bg-white/10 hover:bg-white/30 text-white px-8 py-3 rounded-xl text-xl transition-all">
+                                Sjekk svar
+                            </button>
+                        </div>
+
+                        <!-- Melding / Feedback -->
+                        <div id="feedback-message" class="h-8 text-2xl text-center"></div>
+
+                        <!-- Kontroller for mellomregning -->
+                        <div class="flex gap-4 w-full max-w-lg">
+                            <button id="btn-next-step" onclick="showNextStep()" class="flex-1 border border-white/50 text-white/90 hover:bg-white/10 py-3 rounded-xl text-lg transition-all flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                Vis neste steg (<span id="step-counter">Steg 2</span>)
+                            </button>
+                            <button onclick="generateNewProblem()" class="flex-1 border border-white/30 text-white/70 hover:text-white hover:border-white hover:bg-white/10 py-3 rounded-xl text-lg transition-all">
+                                Ny oppgave
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Tilstands-variabler ---
+        let currentLevel = 1;
+        let currentProblem = null;
+        let currentStepIndex = 0;
+        
+        // Fargepalett for variabler - Kritt-farger som synes godt på mørkegrønn tavle
+        const C_VAR1 = "#93c5fd"; // Kritt-lyseblå
+        const C_VAR2 = "#fde047"; // Kritt-gul
+
+        const rInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const rNonZero = (min, max) => {
+            let v = 0;
+            while(v === 0) v = rInt(min, max);
+            return v;
+        };
+        const rVar = (options) => options[Math.floor(Math.random() * options.length)];
+        
+        // Formaterer tall for innsetting: Negative tall får alltid parentes
+        const fmt = (num) => num < 0 ? `(${num})` : `${num}`;
+
+        // --- Generatorer med detaljert mellomregning ---
+
+        function genLevel1() {
+            let type = rInt(1, 3);
+            let vName = rVar(['x', 'a', 'y', 'n']);
+            let val = rInt(2, 10);
+            let c = rInt(2, 15);
+
+            let expr, condHTML, steps = [], ans;
+            // Skrevet i ren HTML for å garantere at norske bokstaver (å) fungerer perfekt
+            condHTML = `Finn verdien når <span style="color: ${C_VAR1}">${vName}</span> = <span style="color: ${C_VAR1}">${val}</span>`;
+
+            if (type === 1) { // x + c
+                expr = `\\textcolor{${C_VAR1}}{${vName}} + ${c}`;
+                steps.push({
+                    latex: `\\textcolor{${C_VAR1}}{${val}} + ${c}`,
+                    explanation: "Bytt ut bokstaven med tallet"
+                });
+                ans = val + c;
+            } else if (type === 2) { // x - c
+                expr = `\\textcolor{${C_VAR1}}{${vName}} - ${c}`;
+                steps.push({
+                    latex: `\\textcolor{${C_VAR1}}{${val}} - ${c}`,
+                    explanation: "Bytt ut bokstaven med tallet"
+                });
+                ans = val - c;
+            } else { // cx (Inkluderer skjult gangetegn)
+                expr = `${c} \\textcolor{${C_VAR1}}{${vName}}`;
+                steps.push({
+                    latex: `${c} \\cdot \\textcolor{${C_VAR1}}{${val}}`,
+                    explanation: "Bytt ut bokstaven med tallet (husk det skjulte gangetegnet)"
+                });
+                ans = c * val;
+            }
+            
+            steps.push({
+                latex: `\\mathbf{${ans}}`,
+                explanation: "Regn ut svaret"
+            });
+            return { expr, condHTML, steps, ans };
+        }
+
+        function genLevel2() {
+            let type = rInt(1, 3);
+            let vName = rVar(['x', 'a', 'n']);
+            let val = rInt(2, 8);
+            let c = rInt(2, 6);
+            let d = rInt(2, 20);
+
+            let expr, condHTML, steps = [], ans;
+            condHTML = `Finn verdien når <span style="color: ${C_VAR1}">${vName}</span> = <span style="color: ${C_VAR1}">${val}</span>`;
+
+            if (type === 1) { // cx + d
+                expr = `${c} \\textcolor{${C_VAR1}}{${vName}} + ${d}`;
+                steps.push({
+                    latex: `${c} \\cdot \\textcolor{${C_VAR1}}{${val}} + ${d}`,
+                    explanation: "Sett inn tallet for bokstaven"
+                });
+                steps.push({
+                    latex: `${c * val} + ${d}`,
+                    explanation: `Mellomregning: Gang sammen først (${c} · ${val} = ${c * val})`
+                });
+                ans = (c * val) + d;
+            } else if (type === 2) { // cx - d
+                expr = `${c} \\textcolor{${C_VAR1}}{${vName}} - ${d}`;
+                steps.push({
+                    latex: `${c} \\cdot \\textcolor{${C_VAR1}}{${val}} - ${d}`,
+                    explanation: "Sett inn tallet for bokstaven"
+                });
+                steps.push({
+                    latex: `${c * val} - ${d}`,
+                    explanation: `Mellomregning: Gang sammen først (${c} · ${val} = ${c * val})`
+                });
+                ans = (c * val) - d;
+            } else { // d - cx
+                expr = `${d} - ${c} \\textcolor{${C_VAR1}}{${vName}}`;
+                steps.push({
+                    latex: `${d} - ${c} \\cdot \\textcolor{${C_VAR1}}{${val}}`,
+                    explanation: "Sett inn tallet for bokstaven"
+                });
+                steps.push({
+                    latex: `${d} - ${c * val}`,
+                    explanation: `Mellomregning: Utfør multiplikasjonen (${c} · ${val} = ${c * val})`
+                });
+                ans = d - (c * val);
+            }
+
+            steps.push({
+                latex: `\\mathbf{${ans}}`,
+                explanation: "Regn ut til slutt"
+            });
+            return { expr, condHTML, steps, ans };
+        }
+
+        function genLevel3() {
+            let type = rInt(1, 2);
+            let vName = rVar(['x', 'a', 'n']);
+            let val = rInt(-7, -2); // Negativ verdi
+            let c = rInt(2, 6);
+            let d = rInt(2, 15);
+
+            let expr, condHTML, steps = [], ans;
+            condHTML = `Finn verdien når <span style="color: ${C_VAR1}">${vName}</span> = <span style="color: ${C_VAR1}">${val}</span>`;
+
+            if (type === 1) { // cx + d med negativ x
+                expr = `${c} \\textcolor{${C_VAR1}}{${vName}} + ${d}`;
+                steps.push({
+                    latex: `${c} \\cdot \\textcolor{${C_VAR1}}{(${val})} + ${d}`,
+                    explanation: "Sett inn det negative tallet i parentes"
+                });
+                let prod = c * val;
+                steps.push({
+                    latex: `${prod} + ${d}`,
+                    explanation: `Mellomregning: Positivt tall ganger negativt tall gir negativt svar (${c} · ${val} = ${prod})`
+                });
+                ans = prod + d;
+            } else { // d - cx med negativ x (minus ganger minus)
+                expr = `${d} - ${c} \\textcolor{${C_VAR1}}{${vName}}`;
+                steps.push({
+                    latex: `${d} - ${c} \\cdot \\textcolor{${C_VAR1}}{(${val})}`,
+                    explanation: "Sett inn det negative tallet i parentes"
+                });
+                let prod = c * val;
+                steps.push({
+                    latex: `${d} - (${prod})`,
+                    explanation: `Mellomregning: Gang ut leddet (${c} · ${val} = ${prod})`
+                });
+                steps.push({
+                    latex: `${d} + ${Math.abs(prod)}`,
+                    explanation: "Mellomregning (fortegn): Minus foran negativt tall blir pluss"
+                });
+                ans = d - prod;
+            }
+
+            steps.push({
+                latex: `\\mathbf{${ans}}`,
+                explanation: "Regn ut sluttsvaret"
+            });
+            return { expr, condHTML, steps, ans };
+        }
+
+        function genLevel4() {
+            let v1 = 'a', v2 = 'b';
+            let val1 = rNonZero(-5, 4);
+            let val2 = rNonZero(-6, -2); 
+            
+            let c = rInt(2, 4);
+            let d = rInt(2, 4);
+            let type = rInt(1, 3);
+
+            let expr, condHTML, steps = [], ans;
+            condHTML = `Finn verdien når <span style="color: ${C_VAR1}">${v1}</span> = <span style="color: ${C_VAR1}">${val1}</span> og <span style="color: ${C_VAR2}">${v2}</span> = <span style="color: ${C_VAR2}">${val2}</span>`;
+
+            if (type === 1) { // a - b
+                expr = `\\textcolor{${C_VAR1}}{${v1}} - \\textcolor{${C_VAR2}}{${v2}}`;
+                steps.push({
+                    latex: `\\textcolor{${C_VAR1}}{${fmt(val1)}} - \\textcolor{${C_VAR2}}{${fmt(val2)}}`,
+                    explanation: "Sett inn begge tallene i uttrykket"
+                });
+                if (val2 < 0) {
+                    steps.push({
+                        latex: `${val1} + ${Math.abs(val2)}`,
+                        explanation: "Mellomregning (fortegn): Minus minus blir pluss"
+                    });
+                }
+                ans = val1 - val2;
+            } else if (type === 2) { // ca - db
+                expr = `${c} \\textcolor{${C_VAR1}}{${v1}} - ${d} \\textcolor{${C_VAR2}}{${v2}}`;
+                steps.push({
+                    latex: `${c} \\cdot \\textcolor{${C_VAR1}}{${fmt(val1)}} - ${d} \\cdot \\textcolor{${C_VAR2}}{${fmt(val2)}}`,
+                    explanation: "Sett inn tallene for bokstavene"
+                });
+                
+                let p1 = c * val1;
+                let p2 = d * val2;
+                
+                steps.push({
+                    latex: `${p1} - (${p2})`,
+                    explanation: `Mellomregning: Gang ut leddene hver for seg (${c}·${fmt(val1)}=${p1} og ${d}·${fmt(val2)}=${p2})`
+                });
+                
+                if (p2 < 0) {
+                    steps.push({
+                        latex: `${p1} + ${Math.abs(p2)}`,
+                        explanation: "Mellomregning (fortegn): Endre minustegn til pluss foran parentesen"
+                    });
+                }
+                ans = p1 - p2;
+            } else { // ab (Ganging av to negative tall)
+                expr = `\\textcolor{${C_VAR1}}{${v1}}\\textcolor{${C_VAR2}}{${v2}}`;
+                steps.push({
+                    latex: `\\textcolor{${C_VAR1}}{${fmt(val1)}} \\cdot \\textcolor{${C_VAR2}}{${fmt(val2)}}`,
+                    explanation: "Sett inn tallene for bokstavene"
+                });
+                ans = val1 * val2;
+            }
+
+            steps.push({
+                latex: `\\mathbf{${ans}}`,
+                explanation: "Regn ut sluttsvaret"
+            });
+            return { expr, condHTML, steps, ans };
+        }
+
+        // --- UI Håndtering ---
+
+        function setLevel(lvl) {
+            currentLevel = lvl;
+            
+            document.querySelectorAll('.lvl-btn').forEach(btn => {
+                btn.classList.remove('chalk-btn-active');
+            });
+            let activeBtn = document.getElementById(`btn-lvl-${lvl}`);
+            activeBtn.classList.add('chalk-btn-active');
+            
+            generateNewProblem();
+        }
+
+        function generateNewProblem() {
+            if (currentLevel === 1) currentProblem = genLevel1();
+            else if (currentLevel === 2) currentProblem = genLevel2();
+            else if (currentLevel === 3) currentProblem = genLevel3();
+            else if (currentLevel === 4) currentProblem = genLevel4();
+
+            currentStepIndex = 0;
+            
+            // Fjern alle tidligere steg og nullstill tilstanden
+            document.querySelectorAll('.step-math').forEach(el => el.remove());
+            document.getElementById('explanation-container').innerHTML = '';
+
+            document.getElementById('user-answer').value = '';
+            document.getElementById('user-answer').disabled = false;
+            document.getElementById('user-answer').style.borderColor = 'rgba(255, 255, 255, 0.4)';
+            
+            document.getElementById('feedback-message').innerHTML = '';
+            document.getElementById('feedback-message').className = 'h-8 text-2xl text-center';
+            
+            // Tilbakestill UI-faser (skjul input, vis innsettings-knapp)
+            document.getElementById('action-insert').classList.remove('hidden');
+            document.getElementById('action-insert').classList.add('flex');
+            document.getElementById('interactive-controls').classList.add('hidden');
+            document.getElementById('interactive-controls').classList.remove('flex');
+            
+            let btnNext = document.getElementById('btn-next-step');
+            btnNext.disabled = false;
+            btnNext.classList.remove('opacity-30', 'cursor-not-allowed');
+            btnNext.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg> Vis neste steg (<span id="step-counter">Steg 2</span>)`;
+
+            if (window.katex) {
+                renderProblem();
+            } else {
+                setTimeout(renderProblem, 300);
+            }
+        }
+
+        function renderProblem() {
+            let condEl = document.getElementById('problem-condition');
+            let exprEl = document.getElementById('problem-expression');
+            
+            // Bruker ren HTML for oppgaveteksten for å bevare norsk "å"
+            condEl.innerHTML = currentProblem.condHTML;
+            // Bruker KaTeX kun for selve matematikk-uttrykket
+            katex.render(currentProblem.expr, exprEl, { displayMode: false, trust: true });
+        }
+
+        function performSubstitution() {
+            // Skjul "Sett inn"-knappen, vis utregnings-UI
+            document.getElementById('action-insert').classList.remove('flex');
+            document.getElementById('action-insert').classList.add('hidden');
+            document.getElementById('interactive-controls').classList.remove('hidden');
+            document.getElementById('interactive-controls').classList.add('flex');
+            
+            // Vent litt før vi viser første regnesteg
+            setTimeout(() => {
+                showNextStep();
+                setTimeout(() => document.getElementById('user-answer').focus(), 100);
+            }, 100);
+        }
+
+        function showNextStep() {
+            if (currentStepIndex >= currentProblem.steps.length) return;
+
+            let row = document.getElementById('equation-row');
+            let stepData = currentProblem.steps[currentStepIndex];
+            
+            // Lag en ny boks for regnesteget. flex-shrink-0 hindrer at steget blir klemt sammen.
+            let stepMath = document.createElement('div');
+            stepMath.className = 'step-math text-4xl md:text-5xl lg:text-6xl text-white flex-shrink-0';
+            
+            let isLast = currentStepIndex === currentProblem.steps.length - 1;
+            if (isLast) {
+                stepMath.style.color = '#86efac'; // Lysegrønt kritt for sluttsvar
+            }
+            
+            row.appendChild(stepMath);
+            
+            let prefix = "=";
+            katex.render(`${prefix} \\; ${stepData.latex}`, stepMath, { displayMode: false, trust: true });
+
+            // Oppdater forklaringsboksen under ligningen
+            let expContainer = document.getElementById('explanation-container');
+            let highlightStyle = isLast ? 'border-[#86efac] text-[#86efac]' : 'border-white/40 text-white/90';
+            
+            expContainer.innerHTML = `
+                <span class="hint-badge-anim px-6 py-2 rounded-xl text-2xl tracking-wide border-2 bg-white/5 ${highlightStyle}" style="backdrop-filter: blur(4px);">
+                    ${stepData.explanation}
+                </span>
+            `;
+
+            // Fade inn formelen
+            setTimeout(() => {
+                stepMath.classList.add('visible');
+            }, 10);
+
+            currentStepIndex++;
+
+            let btnNext = document.getElementById('btn-next-step');
+            if (currentStepIndex >= currentProblem.steps.length) {
+                btnNext.innerHTML = "Gjennomgang fullført";
+                btnNext.disabled = true;
+                btnNext.classList.add('opacity-30', 'cursor-not-allowed');
+            } else {
+                btnNext.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg> Vis neste steg (Steg ${currentStepIndex + 1})`;
+            }
+        }
+
+        function checkAnswer() {
+            let input = document.getElementById('user-answer');
+            let val = parseInt(input.value);
+            let feedback = document.getElementById('feedback-message');
+
+            if (isNaN(val)) return;
+
+            if (val === currentProblem.ans) {
+                feedback.innerHTML = "Riktig svar! 🎉";
+                feedback.className = "h-8 text-3xl text-[#86efac] text-center"; // Krittgrønn
+                input.style.borderBottomColor = '#86efac';
+                input.disabled = true;
+                
+                // Rull ut hele mellomregningen hvis den ikke var vist
+                while(currentStepIndex < currentProblem.steps.length) {
+                    showNextStep();
+                }
+            } else {
+                feedback.innerHTML = "Ikke helt... se på regnestegene under!";
+                feedback.className = "h-8 text-3xl text-[#fca5a5] text-center"; // Krittrød
+                input.classList.add('shake');
+                input.style.borderBottomColor = '#fca5a5';
+                
+                setTimeout(() => {
+                    input.classList.remove('shake');
+                    input.style.borderBottomColor = 'rgba(255,255,255,0.4)';
+                }, 600);
+                
+                if (currentStepIndex === 0) {
+                    showNextStep();
+                }
+            }
+        }
+
+        document.getElementById('user-answer').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkAnswer();
+        });
+
+        window.onload = () => {
+            let checkInterval = setInterval(() => {
+                if (window.katex) {
+                    clearInterval(checkInterval);
+                    generateNewProblem();
+                }
+            }, 100);
+        };
+
+    </script>
+</body>
+</html>
