@@ -119,29 +119,29 @@
 <body class="min-h-screen p-4 md:p-8">
 
     <!-- Sidetittel for krittavlen -->
-    <h1 class="text-center text-4xl md:text-5xl mb-8 tracking-wide opacity-90" style="text-shadow: 0 0 4px rgba(255,255,255,0.3);">
+    <h1 class="text-center text-3xl md:text-4xl mb-6 opacity-90" style="text-shadow: 0 0 4px rgba(255,255,255,0.3);">
         Variabelinnsetting
     </h1>
 
-    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+    <div class="w-full max-w-[1500px] px-4 md:px-8 mx-auto grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6 md:gap-10">
         
         <!-- Sidepanel: Nivåvelger (Krittmeny) -->
-        <div class="md:col-span-1 flex flex-col gap-4">
+        <div class="md:col-span-1 lg:col-span-1 flex flex-col gap-4">
             <div class="border-2 border-white/20 rounded-2xl p-5 bg-white/5 shadow-lg">
                 <h2 class="text-2xl mb-4 border-b-2 border-white/20 pb-2">Velg nivå</h2>
                 <div class="flex flex-col gap-3">
-                    <!-- Fikset linjedeling ved å bytte ut whitespace-nowrap med block og break-words -->
+                    <!-- Fikset linjedeling ved fjerne break-words -->
                     <button onclick="setLevel(1)" id="btn-lvl-1" class="lvl-btn text-left px-4 py-3 rounded-xl chalk-btn chalk-btn-active">
-                        Nivå 1<br><span class="text-sm opacity-70 block mt-1 leading-snug break-words">Enkel innsetting</span>
+                        Nivå 1<br><span class="text-sm opacity-70 block mt-1 leading-snug">Enkel innsetting</span>
                     </button>
                     <button onclick="setLevel(2)" id="btn-lvl-2" class="lvl-btn text-left px-4 py-3 rounded-xl chalk-btn">
-                        Nivå 2<br><span class="text-sm opacity-70 block mt-1 leading-snug break-words">To regneoperasjoner</span>
+                        Nivå 2<br><span class="text-sm opacity-70 block mt-1 leading-snug">To regneoperasjoner</span>
                     </button>
                     <button onclick="setLevel(3)" id="btn-lvl-3" class="lvl-btn text-left px-4 py-3 rounded-xl chalk-btn">
-                        Nivå 3<br><span class="text-sm opacity-70 block mt-1 leading-snug break-words">Negative tall</span>
+                        Nivå 3<br><span class="text-sm opacity-70 block mt-1 leading-snug">Negative tall</span>
                     </button>
                     <button onclick="setLevel(4)" id="btn-lvl-4" class="lvl-btn text-left px-4 py-3 rounded-xl chalk-btn">
-                        Nivå 4<br><span class="text-sm opacity-70 block mt-1 leading-snug break-words">Flere variabler / fortegn</span>
+                        Nivå 4<br><span class="text-sm opacity-70 block mt-1 leading-snug">Flere variabler / fortegn</span>
                     </button>
                 </div>
             </div>
@@ -157,11 +157,11 @@
         </div>
 
         <!-- Hovedområde: Selve tavla -->
-        <div class="md:col-span-3 flex flex-col gap-6">
-            <div class="border-2 border-white/40 rounded-2xl p-6 md:p-10 min-h-[550px] flex flex-col relative bg-white/5" style="box-shadow: inset 0 0 40px rgba(0,0,0,0.3);">
+        <div class="md:col-span-3 lg:col-span-4 flex flex-col gap-6">
+            <div class="border-2 border-white/40 rounded-2xl p-6 md:p-10 h-auto md:h-[600px] min-h-[600px] flex flex-col relative bg-white/5" style="box-shadow: inset 0 0 40px rgba(0,0,0,0.3);">
                 
                 <!-- Oppgavetekst og horisontal utregning -->
-                <div class="text-center mb-8 flex-grow flex flex-col justify-center">
+                <div class="text-center mb-8 flex-grow flex flex-col justify-start pt-2 md:pt-6">
                     <h2 class="text-2xl md:text-3xl text-white/90 mb-12 border-b border-white/20 pb-4 inline-block mx-auto" id="problem-condition">
                         <!-- Fylles av JS -->
                     </h2>
